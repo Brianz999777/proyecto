@@ -1,0 +1,61 @@
+name: CI/CD - Ansible Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install deps & run tests
+        run: |
+          cd app
+          # Usamos install en lugar de ci si no tienes el archivo package-lock.json aún
+          npm install 
+          # npm test # Descomenta esto cuando tengas tests reales
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      # Cambia la IP de abajo por la tuya real o bórrala si no la quieres ver aquí
+      url: http://${{ secrets.REMOTE_HOST }} 
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare SSH
+        run: |
+          mkdir -p ~/.ssh
+          # Cambiamos la línea de KNOWN_HOSTS por esta para que no falle si no tienes el secreto
+          ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+      - name: Install Ansible
+        run: |
+          sudo apt update
+          sudo apt install -y python3-pip sshpass
+          python3 -m pip install --upgrade pip
+          pip3 install ansible==8.11.0
+
+      - name: Run Ansible Playbook (deploy)
+        env:
+          GIT_REF: ${{ github.ref_name }}
+          # Inyectamos la IP para que el inventario la lea
+          REMOTE_HOST: ${{ secrets.REMOTE_HOST }} 
+        run: |
+          cd ansible
+          ansible-playbook playbooks/deploy.yml \
+          -i inventories/production.yml \
+          --ssh-common-args='-o StrictHostKeyChecking=no' \
+          --private-key ~/.ssh/id_rsa
