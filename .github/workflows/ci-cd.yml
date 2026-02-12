@@ -43,7 +43,6 @@ jobs:
       - name: Prepare SSH
         run: |
           mkdir -p ~/.ssh
-          # Cambiamos la línea de KNOWN_HOSTS por esta para que no falle si no tienes el secreto ----
           ssh-keyscan -H ${{ secrets.REMOTE_HOST }} >> ~/.ssh/known_hosts
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
