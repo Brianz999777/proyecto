@@ -23,7 +23,7 @@ jobs:
       - name: Install deps & run tests
         run: |
           # Solo ejecutamos npm install si el archivo existe, para evitar el error 254
-          if [ -f package.json ]; then
+          #if [ -f package.json ]; then
             npm install
           else
             echo "No se encontró package.json, saltando tests..."
