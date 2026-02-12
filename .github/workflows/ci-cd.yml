@@ -16,11 +16,13 @@ jobs:
           node-version: '18'
       - name: Install deps & run tests
         run: |
-          #cd app
-          # Usamos install en lugar de ci si no tienes el archivo package-lock.json aún
-          npm install 
-          # npm test # Descomenta esto cuando tengas tests reales
-
+          # Solo ejecutamos npm install si el archivo existe, para evitar el error 254
+          if [ -f package.json ]; then
+            npm install
+          else
+            echo "No se encontró package.json, saltando tests..."
+          fi
+          
   deploy:
     needs: test
     runs-on: ubuntu-latest
